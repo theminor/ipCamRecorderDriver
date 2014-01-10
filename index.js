@@ -48,7 +48,7 @@ function Device(app, config) {
 	this.config = config;
 	this.readable = true;
 	this.writeable = true;
-	app.log.info('ipCamRecorderDriver Device ' + config.name + ' is readable and writable';
+	app.log.info('ipCamRecorderDriver Device ' + config.name + ' is readable and writable');
 	this.V = 0; // Vendor ID
 	this.D = 244; // Device ID 244 is Generic State Device
 	this.G = 'ipcr' + (config.name).replace(/[^a-zA-Z0-9]/g, '');
