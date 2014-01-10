@@ -27,7 +27,7 @@ function Driver(opts,app) {
 	if (opts.camList) camList = opts.camList;                	
 	app.once('client::up',function(){
 		camList.forEach(function(cam) {
-			var d = new Device(app);
+			var d = new Device(app, opts);
 			d.camInfo = cam;
 			self.emit('register', d);
 			deviceList.push(d);
