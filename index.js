@@ -26,6 +26,7 @@ function Driver(opts,app) {
 	if (opts.updateInterval) updateInterval = opts.updateInterval;
 	if (opts.camList) camList = opts.camList;                	
 	app.once('client::up',function(){
+		// *** TODO - need to get a way to access cam settings in the device list (example below, d.camInfor = cam)
 		camList.forEach( this.createCommandDevice.bind(this) );
 		//camList.forEach(function(cam) {
 		//	var d = new Device(app);
