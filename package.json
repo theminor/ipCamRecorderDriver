@@ -1,18 +1,18 @@
 {
   "name": "(ipCamRecorderDriver)",
   "version": "0.0.1",
-  "description": "This driver interfaces with Radio Thermostats such as those from radiothermostat.com and similar wifi-based home thermostats",
+  "description": "Ninja Blocks driver that interfaces with ip Cameras to start/stop/check status of recordings",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/theminor/radioThermostatDriver"
+    "url": "git://github.com/theminor/ipCamRecorderDriver"
   },
   "author": "John Minor",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/theminor/radioThermostatDriver/issues"
+    "url": "https://github.com/theminor/ipCamRecorderDriver/issues"
   }
 }
