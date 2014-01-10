@@ -26,12 +26,13 @@ function Driver(opts,app) {
 	if (opts.updateInterval) updateInterval = opts.updateInterval;
 	if (opts.camList) camList = opts.camList;                	
 	app.once('client::up',function(){
-		camList.forEach(function(cam) {
-			var d = new Device(app, opts);
-			d.camInfo = cam;
-			self.emit('register', d);
-			deviceList.push(d);
-		});
+		camList.forEach( this.createCommandDevice.bind(this) );
+		//camList.forEach(function(cam) {
+		//	var d = new Device(app);
+		//	d.camInfo = cam;
+		//	self.emit('register', d);
+		//	deviceList.push(d);
+		//});
 		updateDevices(app, opts);
 		process.nextTick(function() {        // Once all devices are set up, establish a single update process that updates every "updateInterval" seconds
 			setInterval(function() {
@@ -39,6 +40,12 @@ function Driver(opts,app) {
 			}, updateInterval);
 		});
 	}.bind(this));
+};
+
+Driver.prototype.createCommandDevice = function(cmd) {
+	var d = new Device(this._app, cmd);
+	this.emit('register', d);
+	deviceList.push(d);
 };
 
 function Device(app, config) {
