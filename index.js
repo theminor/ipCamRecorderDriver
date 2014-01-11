@@ -72,7 +72,7 @@ function updateDevice(app, opts, device) {	// called when you want to check the 
 			return false;
 		}
 		else {
-			var parsedResult = (stdout + '');
+			var parsedResult = (stdout.trim() + '');
 			app.log.info('Updating ipCamRecorderDriver Device: ' + device.name + ' - emmitting data: ' + parsedResult);
 			device.emit('data', parsedResult);
 		};
@@ -98,8 +98,7 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 			return false;
 		}
 		else {
-			var parsedResult = (stdout + '');
-			if (parsedResult);		
+			app.log.info("ipCamRecorderDriver result : " + stdout);	
 		};
 	});
 };
