@@ -85,16 +85,16 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 	var opts = this.opts;
 	app.log.info("ipCamRecorderDriver Device " + this.name + " received data: " + dataRcvd);
 	var issueCmd = undefined;
-	if (dataRcvd == device.config.name + " record") issueCmd = device.config.recordCommand; else if (dataRcvd == device.config.name + " stop") issueCmd = device.config.stopCommand; else issueCmd = undefined;;
-	app.log.info(device.name + " executing command : " + issueCmd);
+	if (dataRcvd == this.config.name + " record") issueCmd = this.config.recordCommand; else if (dataRcvd == this.config.name + " stop") issueCmd = this.config.stopCommand; else issueCmd = undefined;;
+	app.log.info(this.name + " executing command : " + issueCmd);
 	exec(issueCmd, function(error, stdout, stderr) {
 		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
 		if (error) {
-			app.log.warn('ipCamRecorderDriver : ' + device.name + ' error! - ' + error);
+			app.log.warn('ipCamRecorderDriver : ' + this.name + ' error! - ' + error);
 			return false;
 		}
 		else if (stderr) {
-			app.log.warn('ipCamRecorderDriver : ' + device.name + ' stderr! - ' + stderr);
+			app.log.warn('ipCamRecorderDriver : ' + this.name + ' stderr! - ' + stderr);
 			return false;
 		}
 		else {
