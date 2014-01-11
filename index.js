@@ -91,16 +91,14 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
 		if (error) {
 			app.log.warn('ipCamRecorderDriver : ' + this.name + ' error! - ' + error);
-			return false;
 		}
 		else if (stderr) {
 			app.log.warn('ipCamRecorderDriver : ' + this.name + ' stderr! - ' + stderr);
-			return false;
 		}
 		else {
 			app.log.info("ipCamRecorderDriver result : " + stdout);
-			updateDevice(app, opts, this);
 		};
+		updateDevice(app, opts, this);
 	});
 };
 
