@@ -83,6 +83,7 @@ function updateDevice(app, opts, device) {	// called when you want to check the 
 Device.prototype.write = function(dataRcvd) {	// called to start ("record") or stop a cam
 	var app = this._app;
 	var opts = this.opts;
+	var self = this;
 	app.log.info("ipCamRecorderDriver Device " + this.name + " received data: " + dataRcvd);
 	var issueCmd = undefined;
 	if (dataRcvd == this.config.name + " record") issueCmd = this.config.recordCommand; else if (dataRcvd == this.config.name + " stop") issueCmd = this.config.stopCommand; else issueCmd = undefined;;
@@ -98,7 +99,7 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 		else {
 			app.log.info("ipCamRecorderDriver result : " + stdout);
 		};
-		updateDevice(app, opts, this);
+		updateDevice(app, opts, self);
 	});
 };
 
