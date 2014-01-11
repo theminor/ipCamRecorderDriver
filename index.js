@@ -9,14 +9,7 @@ util.inherits(Device,stream);
 var deviceList = [];
 var pauseAfterSetToUpdate = 5000; // in milliseconds
 var updateInterval = 300000; // in milliseconds
-var camList = [
-	{
-		name: 'garage',
-		recordCommand: 'ssh name@192.168.1.111 ~/ipcam.sh start camera1',
-		stopCommand: 'ssh name@192.168.1.111 ~/ipcam.sh stop camera1',		
-		checkStatusCommand: 'ssh name@192.168.1.111 ls ~/camera1*',
-	}
-];
+var camList = [];
 
 function Driver(opts,app) {
 	var self = this;
@@ -26,17 +19,7 @@ function Driver(opts,app) {
 	if (opts.updateInterval) updateInterval = opts.updateInterval;
 	if (opts.camList) camList = opts.camList;                	
 	app.once('client::up',function(){
-		// *** TODO - need to get a way to access cam settings in the device list (example below, d.camInfor = cam)
-		camList.forEach( function(cam) {
-			var d = self.createCommandDevice.bind(self);
-			d.camInfo = cam;
-		});
-		//camList.forEach(function(cam) {
-		//	var d = new Device(app);
-		//	d.camInfo = cam;
-		//	self.emit('register', d);
-		//	deviceList.push(d);
-		//});
+		camList.forEach( this.createCommandDevice.bind(this) );
 		updateDevices(app, opts);
 		process.nextTick(function() {        // Once all devices are set up, establish a single update process that updates every "updateInterval" seconds
 			setInterval(function() {
@@ -50,7 +33,7 @@ Driver.prototype.createCommandDevice = function(cmd) {
 	var d = new Device(this._app, cmd);
 	this.emit('register', d);
 	deviceList.push(d);
-	return d;
+	// return d;
 };
 
 function Device(app, config) {
@@ -72,14 +55,13 @@ function updateDevices(app, opts) {        // runs every "updateInterval" second
 	app.log.info("Updating all ipCamRecorderDriver Devices...");
 	deviceList.forEach(function(device) {
 		updateDevice(app, opts, device);
+		//device.updateDevice(app, opts);
 	});
 };
 
-
 function updateDevice(app, opts, device) {	// called when you want to check the status of a cam
-	return executeShellCmd(device.camInfo.checkStatusCommand, device, app);
-	app.log.info(device.name + " executing command : " + device.camInfo.checkStatusCommand);
-	exec(device.camInfo.checkStatusCommand, function(error, stdout, stderr) {
+	app.log.info(device.name + " executing command : " + device.config.checkStatusCommand);
+	exec(device.config.checkStatusCommand, function(error, stdout, stderr) {
 		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
 		if (error) {
 			app.log.warn('ipCamRecorderDriver : ' + device.name + ' error! - ' + error);
@@ -91,18 +73,19 @@ function updateDevice(app, opts, device) {	// called when you want to check the 
 		}
 		else {
 			var parsedResult = (stdout + '');
-			app.log.info('Updating ipCamRecorderDriver Device: ' + dev.name + ' - emmitting data: ' + parsedResult);
-			dev.emit('data', parsedResult);
+			app.log.info('Updating ipCamRecorderDriver Device: ' + device.name + ' - emmitting data: ' + parsedResult);
+			device.emit('data', parsedResult);
 		};
 	});
 };	
+
 
 Device.prototype.write = function(dataRcvd) {	// called to start ("record") or stop a cam
 	var app = this._app;
 	var opts = this.opts;
 	app.log.info("ipCamRecorderDriver Device " + this.name + " received data: " + dataRcvd);
 	var issueCmd = undefined;
-	if (dataRcvd == "record") issueCmd = device.camInfo.recordCommand; else if (dataRcvd == "stop") issueCmd = device.camInfo.stopCommand; else issueCmd = undefined;;
+	if (dataRcvd == "record") issueCmd = device.config.recordCommand; else if (dataRcvd == "stop") issueCmd = device.config.stopCommand; else issueCmd = undefined;;
 	app.log.info(device.name + " executing command : " + issueCmd);
 	exec(issueCmd, function(error, stdout, stderr) {
 		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
@@ -129,7 +112,7 @@ Driver.prototype.config = function(rpc,cb) {
 			"contents":[
 				{ "type": "paragraph", "text": "The ipCamRecorderDriver calls shell commands intended to start, stop, and check the status of an IP camera. Enter the settings below to get started, and please make sure you get a confirmation message after hitting 'Submit' below. (You may have to click it a couple of times. If you don't get a confirmation message, the settings did not update!)"},
 				{ "type": "input_field_text", "field_name": "pause_aft_updt_secs_text", "value": pauseAfterSetToUpdate/1000, "label": "Seconds to Pause After a Command Before Updating", "placeholder": pauseAfterSetToUpdate/1000, "required": true},
-				{ "type": "input_field_text", "field_name": "update_interval_text", "value": updateInterval/1000, "label": "How frequently to update data in seconds. (NOTE each update counts as an api call, so limit this per the number of calls per day your api plan allows)", "placeholder": updateInterval/1000, "required": true},
+				{ "type": "input_field_text", "field_name": "update_interval_text", "value": updateInterval/1000, "label": "How frequently to update data in seconds.", "placeholder": updateInterval/1000, "required": true},
 				{ "type": "submit", "name": "Add New", "rpc_method": "add_new_cam" },
 				{ "type": "submit", "name": "Remove Existing", "rpc_method": "remove_cam" },
 				{ "type": "paragraph", "text": " "},
@@ -138,20 +121,14 @@ Driver.prototype.config = function(rpc,cb) {
 			]
 		});
 	}
-//	{
-//		name: 'garage',
-//		recordCommand: 'ssh name@192.168.1.111 ~/ipcam.sh start camera1',
-//		stopCommand: 'ssh name@192.168.1.111 ~/ipcam.sh stop camera1',		
-//		checkStatusCommand: 'ssh name@192.168.1.111 ls ~/camera1*',
-//	}
 	else if (rpc.method == "add_new_cam") {
 		this._app.log.info("ipCamRecorderDriver add_new_cam window called");
 		cb(null, {
 			"contents": [
-				{ "type": "input_field_text", "field_name": "new_cam_name", "label": "Name of New IP Camera", "placeholder": "Front Door", "required": true},
-				{ "type": "input_field_text", "field_name": "new_cam_record_command", "label": "Shell Command to start recording", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh start camera1", "required": true},
-				{ "type": "input_field_text", "field_name": "new_cam_stop_command", "label": "Shell Command to stop recording", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh stop camera1", "required": true},
-				{ "type": "input_field_text", "field_name": "new_cam_status_command", "label": "Shell Command to check status", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh status camera1", "required": true},
+				{ "type": "input_field_text", "field_name": "new_cam_name", "value": "", "label": "Name of New IP Camera", "placeholder": "Front Door", "required": true},
+				{ "type": "input_field_text", "field_name": "new_cam_record_command", "value": "", "label": "Shell Command to start recording", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh start camera1", "required": true},
+				{ "type": "input_field_text", "field_name": "new_cam_stop_command", "value": "", "label": "Shell Command to stop recording", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh stop camera1", "required": true},
+				{ "type": "input_field_text", "field_name": "new_cam_status_command", "value": "", "label": "Shell Command to check status", "placeholder": "ssh name@192.168.1.111 ~/ipcam.sh status camera1", "required": true},
 				{ "type": "paragraph", "text": " "},
 				{ "type": "submit", "name": "Submit", "rpc_method": "new_cam_submt" },
 				{ "type": "close", "name": "Cancel" },
@@ -169,39 +146,67 @@ Driver.prototype.config = function(rpc,cb) {
 		]};
 		deviceList.forEach(function (device) {
 			opts.contents[0].options.push(
-				{ "name": device.name }   //[{ "name": "Fahrenheit", "value": true, "selected": useFahrenheit}, { "name": "Celsius", "value": false, "selected": !useFahrenheit}]
+				{ "name": device.config.name, "value": device.config.name }   //[{ "name": "Fahrenheit", "value": true, "selected": useFahrenheit}, { "name": "Celsius", "value": false, "selected": !useFahrenheit}]
 			);
 		});
 		cb(null, opts);
 		return;                        
 	}
 	else if (rpc.method == "new_cam_submt") {
-		// *** TODO
+		this._app.log.info("ipCamRecorderDriver add_new_cam submitted...");
+		var newCam = {
+			"name": rpc.params.new_cam_name,
+			"recordCommand": rpc.params.new_cam_record_command,
+			"stopCommand": rpc.params.new_cam_stop_command,		
+			"checkStatusCommand": rpc.params.new_cam_status_command,
+		};
+		camList.push(newCam);
+		var tmpAry = [newCam];
+		tmpAry.forEach( this.createCommandDevice.bind(this) );
+		self.opts.camList = camList; // also need this in milliseconds                        
+		self.save();
+		updateDevices(this._app, opts);
+		cb(null, {
+			"contents": [
+				{ "type": "paragraph", "text": "Configuration was successful. ipCamRecorderDriver values should update shortly!" },
+				{ "type": "close"    , "name": "Close" }
+			]
+		});
 	}
 	else if (rpc.method == "remove_cam_submt") {
-		// *** TODO
+		this._app.log.info("ipCamRecorderDriver add_new_cam submitted...");
+		var camToRmv = rpc.params.remove_cam_select;
+		var keyToRmv = undefined;
+		deviceList.forEach(function(device, key) {
+			if (camToRmv == device.config.name) {
+				keyToRmv = key;
+			}
+		});
+		if (keyToRmv) deviceList[key] = undefined;;
+		camList.forEach(function(cm, key) {
+			if (camToRmv == cm.name) {
+				keyToRmv = key;
+			}
+		});
+		if (keyToRmv) camList[key] = undefined;;		
+		// *** TODO - is there a way to actually remove the device from active devices on the ninja (without restarting)?
+		self.opts.camList = camList; // also need this in milliseconds                        
+		self.save();
+		updateDevices(this._app, opts);		
+		cb(null, {
+			"contents": [
+				{ "type": "paragraph", "text": "Configuration was successful. Removal of ipCam should be complete upon restart..." },
+				{ "type": "close"    , "name": "Close" }
+			]
+		});
 	}
 	else if (rpc.method == "submt") {
-		// *** TODO
-
-		
-		/*
 		this._app.log.info("ipCamRecorderDriver config window submitted. Checking data for errors...");
-		// check for errors
-		if (!(rpc.params.zip_code_text >= 0)) {        // zip_code_text must evaluate to a positive number or 0
-			cb(null, {
-				"contents": [
-					{ "type": "paragraph", "text": "zip code must be a number and can't be negative. Please try again." },
-					{ "type": "close"    , "name": "Close" }
-				]
-			});                        
-			return;                        
-		}
-		else if (!(rpc.params.pause_aft_updt_secs_text >= 0)) {        // pause_aft_updt_secs_text must evaluate to a positive number or 0
+		if (!(rpc.params.pause_aft_updt_secs_text >= 0)) {        // pause_aft_updt_secs_text must evaluate to a positive number or 0
 			cb(null, {
 				"contents": [
 					{ "type": "paragraph", "text": "The 'pause after update' interval must be a number and can't be negative. Please try again." },
-					{ "type": "close"    , "name": "Close" }
+					{ "type": "close", "name": "Close" }
 				]
 			});                        
 			return;                                
@@ -216,27 +221,19 @@ Driver.prototype.config = function(rpc,cb) {
 			return;                                
 		}                
 		else {        // looks like the submitted values were valid, so update
-			this._app.log.info("ipCamRecorderDriver data appears valid. Saving settings...");
-			self.opts.apiKey = rpc.params.api_text;
-			self.opts.zipCode = rpc.params.zip_code_text;
-			self.opts.useFahrenheit = rpc.params.use_fahrenheit_select;
-			self.opts.pauseAftUpdt = rpc.params.pause_aft_updt_secs_text * 1000; // also need this in milliseconds
+			self.opts.pauseAfterSetToUpdate = rpc.params.pause_aft_updt_secs_text * 1000; // also need this in milliseconds
 			self.opts.updateInterval = rpc.params.update_interval_text * 1000; // also need this in milliseconds                        
-			apiKey = self.opts.apiKey; // ugly way to track these, but it should work for now...
-			zipCode = self.opts.zipCode;
-			useFahrenheit = self.opts.useFahrenheit;
-			pauseAftUpdt = self.opts.pauseAftUpdt;
+			pauseAfterSetToUpdate = self.opts.pauseAfterSetToUpdate;
 			updateInterval = self.opts.updateInterval;                        
 			self.save();
+			updateDevices(this._app, self.opts);
 			cb(null, {
 				"contents": [
 					{ "type": "paragraph", "text": "Configuration was successful. ipCamRecorderDriver values should update shortly!" },
 					{ "type": "close"    , "name": "Close" }
 				]
 			});
-			updateDevices(this._app, self.opts);
-		};
-		*/
+		};	
 	}
 	else {
 		this._app.log.info("ipCamRecorderDriver - Unknown rpc method was called!");
