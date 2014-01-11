@@ -27,7 +27,10 @@ function Driver(opts,app) {
 	if (opts.camList) camList = opts.camList;                	
 	app.once('client::up',function(){
 		// *** TODO - need to get a way to access cam settings in the device list (example below, d.camInfor = cam)
-		camList.forEach( this.createCommandDevice.bind(this) );
+		camList.forEach( function(cam) {
+			var d = self.createCommandDevice.bind(self);
+			d.camInfo = cam;
+		});
 		//camList.forEach(function(cam) {
 		//	var d = new Device(app);
 		//	d.camInfo = cam;
@@ -47,6 +50,7 @@ Driver.prototype.createCommandDevice = function(cmd) {
 	var d = new Device(this._app, cmd);
 	this.emit('register', d);
 	deviceList.push(d);
+	return d;
 };
 
 function Device(app, config) {
