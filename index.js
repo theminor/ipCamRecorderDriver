@@ -98,7 +98,8 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 			return false;
 		}
 		else {
-			app.log.info("ipCamRecorderDriver result : " + stdout);	
+			app.log.info("ipCamRecorderDriver result : " + stdout);
+			updateDevice(app, opts, this);
 		};
 	});
 };
