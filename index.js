@@ -43,7 +43,7 @@ function Device(app, config) {
 	this.config = config;
 	this.readable = true;
 	this.writeable = true;
-	app.log.info('ipCamRecorderDriver Device ' + config.name + ' is readable and writable');
+	app.log.debug('ipCamRecorderDriver Device ' + config.name + ' is readable and writable');
 	this.V = 0; // Vendor ID
 	this.D = 244; // Device ID 244 is Generic State Device
 	this.G = 'ipcr' + (config.name).replace(/[^a-zA-Z0-9]/g, '');
@@ -52,7 +52,7 @@ function Device(app, config) {
 };
 
 function updateDevices(app, opts) {        // runs every "updateInterval" seconds
-	app.log.info("Updating all ipCamRecorderDriver Devices...");
+	app.log.debug("Updating all ipCamRecorderDriver Devices...");
 	deviceList.forEach(function(device) {
 		updateDevice(app, opts, device);
 		//device.updateDevice(app, opts);
@@ -60,9 +60,9 @@ function updateDevices(app, opts) {        // runs every "updateInterval" second
 };
 
 function updateDevice(app, opts, device) {	// called when you want to check the status of a cam
-	app.log.info(device.name + " executing command : " + device.config.checkStatusCommand);
+	app.log.debug(device.name + " executing command : " + device.config.checkStatusCommand);
 	exec(device.config.checkStatusCommand, function(error, stdout, stderr) {
-		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
+		app.log.debug("Result of ipCamRecorderDriver command: " + stdout);
 		if (error) {
 			app.log.warn('ipCamRecorderDriver : ' + device.name + ' error! - ' + error);
 			return false;
@@ -73,7 +73,7 @@ function updateDevice(app, opts, device) {	// called when you want to check the 
 		}
 		else {
 			var parsedResult = (stdout.trim() + '');
-			app.log.info('Updating ipCamRecorderDriver Device: ' + device.name + ' - emmitting data: ' + parsedResult);
+			app.log.debug('Updating ipCamRecorderDriver Device: ' + device.name + ' - emmitting data: ' + parsedResult);
 			device.emit('data', parsedResult);
 		};
 	});
@@ -84,12 +84,12 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 	var app = this._app;
 	var opts = this.opts;
 	var self = this;
-	app.log.info("ipCamRecorderDriver Device " + this.name + " received data: " + dataRcvd);
+	app.log.debug("ipCamRecorderDriver Device " + this.name + " received data: " + dataRcvd);
 	var issueCmd = undefined;
 	if (dataRcvd == this.config.name + " record") issueCmd = this.config.recordCommand; else if (dataRcvd == this.config.name + " stop") issueCmd = this.config.stopCommand; else issueCmd = undefined;;
-	app.log.info(this.name + " executing command : " + issueCmd);
+	app.log.debug(this.name + " executing command : " + issueCmd);
 	exec(issueCmd, function(error, stdout, stderr) {
-		app.log.info("Result of ipCamRecorderDriver command: " + stdout);
+		app.log.debug("Result of ipCamRecorderDriver command: " + stdout);
 		if (error) {
 			app.log.warn('ipCamRecorderDriver : ' + this.name + ' error! - ' + error);
 		}
@@ -97,7 +97,7 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 			app.log.warn('ipCamRecorderDriver : ' + this.name + ' stderr! - ' + stderr);
 		}
 		else {
-			app.log.info("ipCamRecorderDriver result : " + stdout);
+			app.log.debug("ipCamRecorderDriver result : " + stdout);
 		};
 		updateDevice(app, opts, self);
 	});
@@ -106,7 +106,7 @@ Device.prototype.write = function(dataRcvd) {	// called to start ("record") or s
 Driver.prototype.config = function(rpc,cb) {
 	var self = this;
 	if (!rpc) {
-		this._app.log.info("ipCamRecorderDriver main config window called");
+		this._app.log.debug("ipCamRecorderDriver main config window called");
 		return cb(null, {        // main config window
 			"contents":[
 				{ "type": "paragraph", "text": "The ipCamRecorderDriver calls shell commands intended to start, stop, and check the status of an IP camera. Enter the settings below to get started, and please make sure you get a confirmation message after hitting 'Submit' below. (You may have to click it a couple of times. If you don't get a confirmation message, the settings did not update!)"},
@@ -121,7 +121,7 @@ Driver.prototype.config = function(rpc,cb) {
 		});
 	}
 	else if (rpc.method == "add_new_cam") {
-		this._app.log.info("ipCamRecorderDriver add_new_cam window called");
+		this._app.log.debug("ipCamRecorderDriver add_new_cam window called");
 		cb(null, {
 			"contents": [
 				{ "type": "input_field_text", "field_name": "new_cam_name", "value": "", "label": "Name of New IP Camera", "placeholder": "Front Door", "required": true},
@@ -136,7 +136,7 @@ Driver.prototype.config = function(rpc,cb) {
 		return;                        
 	}
 	else if (rpc.method == "remove_cam") {
-		this._app.log.info("ipCamRecorderDriver remove_cam window called");
+		this._app.log.debug("ipCamRecorderDriver remove_cam window called");
 		var opts = { "contents": [
 			{ "type": "input_field_select", "field_name": "remove_cam_select", "options": [], "label": "Select Cam to Remove", "required": true },
 			{ "type": "paragraph", "text": " "},
@@ -152,7 +152,7 @@ Driver.prototype.config = function(rpc,cb) {
 		return;                        
 	}
 	else if (rpc.method == "new_cam_submt") {
-		this._app.log.info("ipCamRecorderDriver add_new_cam submitted...");
+		this._app.log.debug("ipCamRecorderDriver add_new_cam submitted...");
 		var newCam = {
 			"name": rpc.params.new_cam_name,
 			"recordCommand": rpc.params.new_cam_record_command,
@@ -173,7 +173,7 @@ Driver.prototype.config = function(rpc,cb) {
 		});
 	}
 	else if (rpc.method == "remove_cam_submt") {
-		this._app.log.info("ipCamRecorderDriver add_new_cam submitted...");
+		this._app.log.debug("ipCamRecorderDriver add_new_cam submitted...");
 		var camToRmv = rpc.params.remove_cam_select;
 		var keyToRmv = undefined;
 		deviceList.forEach(function(device, key) {
@@ -200,7 +200,7 @@ Driver.prototype.config = function(rpc,cb) {
 		});
 	}
 	else if (rpc.method == "submt") {
-		this._app.log.info("ipCamRecorderDriver config window submitted. Checking data for errors...");
+		this._app.log.debug("ipCamRecorderDriver config window submitted. Checking data for errors...");
 		if (!(rpc.params.pause_aft_updt_secs_text >= 0)) {        // pause_aft_updt_secs_text must evaluate to a positive number or 0
 			cb(null, {
 				"contents": [
@@ -235,7 +235,7 @@ Driver.prototype.config = function(rpc,cb) {
 		};	
 	}
 	else {
-		this._app.log.info("ipCamRecorderDriver - Unknown rpc method was called!");
+		this._app.log.warn("ipCamRecorderDriver - Unknown rpc method was called!");
 	};
 };
 
